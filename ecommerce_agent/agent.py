@@ -2,16 +2,37 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from google.adk.agents import LlmAgent
-from google.adk.tools import google_search
+from google.adk.tools import ToolContext
+from catalog_agent.agent import catalog_agent
+
+# For now we are using normal python instead of calling API
+# As its exceeds quota limits for free tier
+
+# API request allowd for only 20 requests per day   
+
+
+
+def save_user_info(tool_context: ToolContext,
+                   name: str,
+                   email: str,
+                   mobile: str):
+    
+    # Save user information in the tool context state
+    tool_context.state["name"] = name
+    tool_context.state["email"] = email
+    tool_context.state["mobile"] = mobile
+
+
 
 root_agent = LlmAgent(
     name="ecommerce_agent",
     description="An ecommerce agent that manages the ecommmerce workflow",
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash-lite",
     instruction="""
 Role: You are an ecommerce agent who can help the user with product catalog, checkout and order tracking.
 
 Workflow:
+- Greet the user and introduce yourself as an ecommerce assistant.
 - If you do not know, ask for the user's name, email and mobile number. Ask only one information at a time.
 - Once you have the above information, call the save_user_info() tool to save these information.
 - Then understand the user's intent. Are they looking for new purchase or track an existing order.
@@ -26,5 +47,6 @@ Rules:
 3. If you are unsure, ask a short clarifying question instead of guessing.
 4. After a sub-agent responds, you may send that response back as-is to the user, without adding extra content.
 """,
-    tools=[google_search]
+    tools=[save_user_info],
+    sub_agents=[catalog_agent]
 )
